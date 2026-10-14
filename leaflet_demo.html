@@ -1,0 +1,123 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Map User Location</title>
+
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    >
+
+    <style>
+        #map {
+            height: 450px;
+            width: 100%;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        #status {
+            margin: 12px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Map User Location</h1>
+
+    <p id="status">Waiting for location permission...</p>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // Create the map with Jaipur as the initial view
+        var map = L.map('map').setView([26.9196, 75.7878], 13);
+
+        // Load OpenStreetMap tiles
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        let marker = null;
+        let circle = null;
+
+        const status = document.getElementById('status');
+
+        // Check browser support
+        if ('geolocation' in navigator) {
+            status.textContent = 'Requesting your location...';
+
+            navigator.geolocation.watchPosition(
+                success,
+                error,
+                {
+                    enableHighAccuracy: true,
+                    maximumAge: 0,
+                    timeout: 15000
+                }
+            );
+        } else {
+            status.textContent =
+                'Geolocation is not supported by your browser.';
+        }
+
+        function success(position) {
+            // Get the user's coordinates
+            const lati = position.coords.latitude;
+            const longi = position.coords.longitude;
+            const acc = position.coords.accuracy;
+
+            // Update the existing marker or create one
+            if (marker) {
+                marker.setLatLng([lati, longi]);
+                circle.setLatLng([lati, longi]);
+                circle.setRadius(acc);
+            } else {
+                marker = L.marker([lati, longi])
+                    .addTo(map)
+                    .bindPopup('You are here!');
+
+                circle = L.circle([lati, longi], {
+                    radius: acc
+                }).addTo(map);
+            }
+
+            // Center the map on the user's location
+            map.setView([lati, longi], 16);
+
+            status.textContent =
+                `Latitude: ${lati.toFixed(6)}, ` +
+                `Longitude: ${longi.toFixed(6)}, ` +
+                `Accuracy: approximately ${Math.round(acc)} metres`;
+
+            marker.openPopup();
+        }
+
+        function error(err) {
+            if (err.code === 1) {
+                status.textContent =
+                    'Location permission denied. Please allow location access.';
+            } else if (err.code === 2) {
+                status.textContent =
+                    'Your current location is unavailable.';
+            } else if (err.code === 3) {
+                status.textContent =
+                    'Location request timed out. Please try again.';
+            } else {
+                status.textContent = 'Unable to retrieve your location.';
+            }
+        }
+    </script>
+</body>
+</html>
+```

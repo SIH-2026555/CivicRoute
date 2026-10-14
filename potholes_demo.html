@@ -1,0 +1,214 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Road Damage Severity Map</title>
+
+    <link rel="stylesheet"
+          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        #map {
+            height: 500px;
+            width: 100%;
+            border-radius: 10px;
+        }
+
+        #status {
+            padding: 10px;
+            background: #f1f5f9;
+            border-radius: 6px;
+        }
+
+        .legend {
+            margin: 12px 0;
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>AI Road Damage Detection</h1>
+    <p id="status">Getting your location...</p>
+
+    <div class="legend">
+        <span>🔴 High severity</span>
+        <span>🟡 Medium severity</span>
+        <span>🟢 Low severity</span>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // 1. Create the map
+        const map = L.map('map').setView(
+            [26.9196, 75.7878], 14
+        );
+
+        // 2. Load OpenStreetMap
+        L.tileLayer(
+            'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+            {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap contributors'
+            }
+        ).addTo(map);
+
+        const status = document.getElementById('status');
+
+        // 3. Sample pothole data
+        // These records are FAKE demonstration data.
+        const demoPotholes = [
+            {
+                id: 1,
+                severity: 'High',
+                confidence: 0.94,
+                source: 'Municipal dashcam'
+            },
+            {
+                id: 2,
+                severity: 'Medium',
+                confidence: 0.87,
+                source: 'Citizen report'
+            },
+            {
+                id: 3,
+                severity: 'Low',
+                confidence: 0.91,
+                source: 'Municipal dashcam'
+            },
+            {
+                id: 4,
+                severity: 'High',
+                confidence: 0.89,
+                source: 'Citizen report'
+            },
+            {
+                id: 5,
+                severity: 'Medium',
+                confidence: 0.82,
+                source: 'Municipal dashcam'
+            },
+            {
+                id: 6,
+                severity: 'Low',
+                confidence: 0.96,
+                source: 'Citizen report'
+            }
+        ];
+
+        // 4. Select a marker colour
+        function getColor(severity) {
+            if (severity === 'High') return '#dc2626';
+            if (severity === 'Medium') return '#eab308';
+            return '#16a34a';
+        }
+
+        // 5. Generate fake locations near a centre point
+        function showDemoPotholes(lat, lng) {
+
+            demoPotholes.forEach(function(pothole) {
+
+                // Random position within roughly 1 km
+                const latOffset =
+                    (Math.random() - 0.5) * 0.018;
+
+                const lngOffset =
+                    (Math.random() - 0.5) * 0.022;
+
+                const potholeLat = lat + latOffset;
+                const potholeLng = lng + lngOffset;
+
+                // Create a coloured map marker
+                const marker = L.circleMarker(
+                    [potholeLat, potholeLng],
+                    {
+                        radius: 9,
+                        color: getColor(pothole.severity),
+                        fillColor: getColor(pothole.severity),
+                        fillOpacity: 0.85,
+                        weight: 2
+                    }
+                ).addTo(map);
+
+                // Display information when clicked
+                marker.bindPopup(`
+                    <b>Demo Pothole #${pothole.id}</b><br>
+                    Severity: ${pothole.severity}<br>
+                    Model confidence: ${
+                        (pothole.confidence * 100).toFixed(0)
+                    }%<br>
+                    Source: ${pothole.source}<br>
+                    Latitude: ${potholeLat.toFixed(6)}<br>
+                    Longitude: ${potholeLng.toFixed(6)}<br>
+                    <b>Demo data — not a verified pothole</b>
+                `);
+            });
+        }
+
+        // 6. Get the user's location
+        if ('geolocation' in navigator) {
+
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+
+                    // Centre map on the user
+                    map.setView([lat, lng], 14);
+
+                    // Show user's own position
+                    L.marker([lat, lng])
+                        .addTo(map)
+                        .bindPopup('Your current location');
+
+                    // Generate demo potholes around the user
+                    showDemoPotholes(lat, lng);
+
+                    status.textContent =
+                        'Location found. Showing random demo potholes nearby.';
+                },
+
+                function(error) {
+
+                    // Fallback to Jaipur if location is unavailable
+                    map.setView([26.9196, 75.7878], 14);
+
+                    showDemoPotholes(26.9196, 75.7878);
+
+                    status.textContent =
+                        'Location unavailable. Showing demo data around Jaipur.';
+                },
+
+                {
+                    enableHighAccuracy: true,
+                    timeout: 15000,
+                    maximumAge: 0
+                }
+            );
+
+        } else {
+
+            showDemoPotholes(26.9196, 75.7878);
+
+            status.textContent =
+                'Geolocation unsupported. Showing demo data around Jaipur.';
+        }
+    </script>
+
+</body>
+</html>
+```
